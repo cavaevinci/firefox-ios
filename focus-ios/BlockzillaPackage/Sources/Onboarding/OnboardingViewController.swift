@@ -119,10 +119,18 @@ public class OnboardingViewController: UIViewController {
         stackView.distribution = .fill
         stackView.isLayoutMarginsRelativeArrangement = true
         if UIDevice.current.userInterfaceIdiom == .phone {
-            stackView.layoutMargins = .init(top: view.frame.height / .layoutMarginTopDivider, left: view.frame.width / .layoutMarginLeadingTrailingDivider, bottom: .layoutMarginBottom, right: view.frame.width / .layoutMarginLeadingTrailingDivider)
+            stackView.layoutMargins = .init(
+                top: view.frame.height / .layoutMarginTopDivider,
+                left: view.frame.width / .layoutMarginLeadingTrailingDivider,
+                bottom: .layoutMarginBottom,
+                right: view.frame.width / .layoutMarginLeadingTrailingDivider)
             stackView.spacing = view.frame.height / .spacingDividerPhone
         } else {
-            stackView.layoutMargins = .init(top: .layoutMarginTop, left: view.frame.width / .layoutMarginLeadingTrailingDivider, bottom: .layoutMarginBottom, right: view.frame.width / .layoutMarginLeadingTrailingDivider)
+            stackView.layoutMargins = .init(
+                top: .layoutMarginTop,
+                left: view.frame.width / .layoutMarginLeadingTrailingDivider,
+                bottom: .layoutMarginBottom,
+                right: view.frame.width / .layoutMarginLeadingTrailingDivider)
             stackView.spacing = view.frame.height / .spacingDividerPad
         }
         stackView.accessibilityIdentifier = "OnboardingViewController.mainStackView"
@@ -176,10 +184,18 @@ public class OnboardingViewController: UIViewController {
         super.viewWillTransition(to: size, with: coordinator)
 
         if UIDevice.current.userInterfaceIdiom == .phone {
-            mainStackView.layoutMargins = .init(top: size.height / .layoutMarginTopDivider, left: size.width / .layoutMarginLeadingTrailingDivider, bottom: .layoutMarginBottom, right: size.width / .layoutMarginLeadingTrailingDivider)
+            mainStackView.layoutMargins = .init(
+                top: size.height / .layoutMarginTopDivider,
+                left: size.width / .layoutMarginLeadingTrailingDivider,
+                bottom: .layoutMarginBottom,
+                right: size.width / .layoutMarginLeadingTrailingDivider)
             mainStackView.spacing = size.height / .spacingDividerPhone
         } else {
-            mainStackView.layoutMargins = .init(top: .layoutMarginTop, left: size.width / .layoutMarginLeadingTrailingDivider, bottom: .layoutMarginBottom, right: size.width / .layoutMarginLeadingTrailingDivider)
+            mainStackView.layoutMargins = .init(
+                top: .layoutMarginTop,
+                left: size.width / .layoutMarginLeadingTrailingDivider,
+                bottom: .layoutMarginBottom,
+                right: size.width / .layoutMarginLeadingTrailingDivider)
             mainStackView.spacing = size.height / .spacingDividerPad
         }
 
