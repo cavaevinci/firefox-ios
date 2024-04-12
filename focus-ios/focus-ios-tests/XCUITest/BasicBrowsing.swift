@@ -29,14 +29,14 @@ class BasicBrowsing: BaseTestCase {
         shareButton.tap()
 
         // Launch external app
-        let RemindersApp: XCUIElement
+        let remindersApp: XCUIElement
         if iPad() {
-            RemindersApp = app.collectionViews.scrollViews.cells.element(boundBy: 0)
+            remindersApp = app.collectionViews.scrollViews.cells.element(boundBy: 0)
         } else {
-            RemindersApp = app.collectionViews.scrollViews.cells.element(boundBy: 1)
+            remindersApp = app.collectionViews.scrollViews.cells.element(boundBy: 1)
         }
-        waitForExistence(RemindersApp, timeout: 5)
-        RemindersApp.tap()
+        waitForExistence(remindersApp, timeout: 5)
+        remindersApp.tap()
         waitForExistence(app.buttons["Add"], timeout: 10)
         XCTAssertTrue(app.buttons["Add"].exists)
     }
