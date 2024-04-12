@@ -13,41 +13,41 @@ import XCTest
 class RequestHandlerTests: XCTestCase {
     private let alertCallback: (UIAlertController) -> Void = { _ in }
     private let reguestHandler = RequestHandler()
-    private let EXTERNAL_SCHEME = "itms-appss"
-    private let INVALID_URL = "Invalid URL"
-    private let HTTPS_INTERNAL_SCHEME = "https"
-    private let EXAMPLE_HOST = "www.example.com"
+    private let externalScheme = "itms-appss"
+    private let invalidURL = "Invalid URL"
+    private let httpsInternalScheme = "https"
+    private let exampleHost = "www.example.com"
 
     func testValidURLAndScheme() {
-        let urlRequest = URLRequest(url: URL(string: "\(HTTPS_INTERNAL_SCHEME)://\(EXAMPLE_HOST)")!)
+        let urlRequest = URLRequest(url: URL(string: "\(httpsInternalScheme)://\(exampleHost)")!)
         let sut = reguestHandler.handle(request: urlRequest, alertCallback: alertCallback)
         XCTAssertTrue(sut)
     }
 
     func testInvalidURLAndScheme() {
-        var urlRequest = URLRequest(url: URL(string: "\(HTTPS_INTERNAL_SCHEME)://\(EXAMPLE_HOST)")!)
-        urlRequest.url = URL(string: INVALID_URL)
+        var urlRequest = URLRequest(url: URL(string: "\(httpsInternalScheme)://\(exampleHost)")!)
+        urlRequest.url = URL(string: invalidURL)
         let sut = reguestHandler.handle(request: urlRequest, alertCallback: alertCallback)
         XCTAssertFalse(sut)
     }
 
     func testSchemeIsNotInternalScheme() {
-        let urlRequest = URLRequest(url: URL(string: "\(EXTERNAL_SCHEME)://\(EXAMPLE_HOST)")!)
+        let urlRequest = URLRequest(url: URL(string: "\(externalScheme)://\(exampleHost)")!)
         let sut = reguestHandler.handle(request: urlRequest, alertCallback: alertCallback)
         XCTAssertFalse(sut)
     }
 
     func testInternalSchemeAndHostIsNil() {
-        let urlRequest = URLRequest(url: URL(string: "\(HTTPS_INTERNAL_SCHEME)://")!)
+        let urlRequest = URLRequest(url: URL(string: "\(httpsInternalScheme)://")!)
         let sut = reguestHandler.handle(request: urlRequest, alertCallback: alertCallback)
         XCTAssertTrue(sut)
     }
 
     func testInternalSchemeAndSpecialCaseHosts() {
-        var urlRequest = URLRequest(url: URL(string: "\(HTTPS_INTERNAL_SCHEME)://\("maps.apple.com")")!)
+        var urlRequest = URLRequest(url: URL(string: "\(httpsInternalScheme)://\("maps.apple.com")")!)
         var sut = reguestHandler.handle(request: urlRequest, alertCallback: alertCallback)
         XCTAssertFalse(sut)
-        urlRequest = URLRequest(url: URL(string: "\(HTTPS_INTERNAL_SCHEME)://\("itunes.apple.com")")!)
+        urlRequest = URLRequest(url: URL(string: "\(httpsInternalScheme)://\("itunes.apple.com")")!)
         sut = reguestHandler.handle(request: urlRequest, alertCallback: alertCallback)
         XCTAssertFalse(sut)
     }
