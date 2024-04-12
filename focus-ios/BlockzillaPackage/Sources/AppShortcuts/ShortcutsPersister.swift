@@ -15,18 +15,19 @@ extension UserDefaults: ShortcutsPersister {
             set(encoded, forKey: "Shortcuts")
         }
     }
-
     public func load() -> [Shortcut] {
-        if let storedObjItem = object(forKey: "Shortcuts") {
-            do {
-                let decodedShortcuts = try JSONDecoder().decode([Shortcut].self, from: storedObjItem as! Data)
-                print("Retrieved items: \(decodedShortcuts)")
-                return decodedShortcuts
-            } catch let error {
-                print(error)
-                return []
-            }
+      if let storedObjItem = object(forKey: "Shortcuts"),
+         let data = storedObjItem as? Data {
+        do {
+          let decodedShortcuts = try JSONDecoder().decode([Shortcut].self, from: data)
+          print("Retrieved items: \(decodedShortcuts)")
+          return decodedShortcuts
+        } catch let error {
+          print(error)
+          return []
         }
-        return []
+      }
+      return []
     }
+
 }
