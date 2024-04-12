@@ -17,12 +17,12 @@ class URLValidationTest: BaseTestCase {
 
     // https://testrail.stage.mozaws.net/index.php?/cases/view/2460275
     func testDifferentURLTypes() {
-        for i in urlTypes {
-            loadAndValidateURL(URL: i)
+        for url in urlTypes {
+            loadAndValidateURL(URL: url)
         }
 
-        for i in urlHttpTypes {
-            loadAndValidateHttpURLs(URL: i)
+        for url in urlHttpTypes {
+            loadAndValidateHttpURLs(URL: url)
         }
     }
 
