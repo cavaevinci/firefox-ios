@@ -63,7 +63,14 @@ public struct ShowMeHowOnboardingView: View {
                         }
                     }
                     Spacer()
-                }.padding(EdgeInsets(top: .topBottomPadding, leading: .leadingTrailingPadding, bottom: .topBottomPadding, trailing: .leadingTrailingPadding))
+                }.padding(
+                        EdgeInsets(
+                            top: .topBottomPadding,
+                            leading: .leadingTrailingPadding,
+                            bottom: .topBottomPadding,
+                            trailing: .leadingTrailingPadding
+                        )
+                    )
                     .navigationTitle(config.title)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -85,7 +92,8 @@ public struct ShowMeHowOnboardingViewConfig {
     let buttonText: String
     let widgetText: String
 
-    public init(title: String, subtitleStep1: String, subtitleStep2: String, subtitleStep3: String, buttonText: String, widgetText: String) {
+    public init(title: String, subtitleStep1: String, subtitleStep2: String,
+                subtitleStep3: String, buttonText: String, widgetText: String) {
         self.title = title
         self.subtitleStep1 = subtitleStep1
         self.subtitleStep2 = subtitleStep2
@@ -98,7 +106,11 @@ public struct ShowMeHowOnboardingViewConfig {
 @available(iOS 14.0, *)
 struct ShowMeHowOnboardingView_Previews: PreviewProvider {
     static var previews: some View {
-        ShowMeHowOnboardingView(config: ShowMeHowOnboardingViewConfig(title: "Add a Focus Widget", subtitleStep1: "Long press on the Home screen until the icons start to jiggle.", subtitleStep2: "Tap on the plus icon.", subtitleStep3: "Search for FireFox Focus. Then choose a widget.", buttonText: "Done", widgetText: "Search in Focus"), dismissAction: { })
+        ShowMeHowOnboardingView(config: ShowMeHowOnboardingViewConfig(
+        title: "Add a Focus Widget",
+        subtitleStep1: "Long press on the Home screen until the icons start to jiggle.",
+        subtitleStep2: "Tap on the plus icon.", subtitleStep3: "Search for FireFox Focus. Then choose a widget.",
+        buttonText: "Done", widgetText: "Search in Focus"), dismissAction: { })
     }
 }
 
