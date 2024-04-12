@@ -27,12 +27,15 @@ public class OnboardingViewModel: ObservableObject {
 
     @Published var activeScreen = Screen.getStarted
 
-    public init(config: GetStartedOnboardingViewConfig, defaultBrowserConfig: DefaultBrowserViewConfig, dismissAction: @escaping () -> Void, telemetry: @escaping (OnboardingViewModel.Action) -> Void) {
+    public init(config: GetStartedOnboardingViewConfig,
+                defaultBrowserConfig: DefaultBrowserViewConfig,
+                dismissAction: @escaping () -> Void,
+                telemetry: @escaping (OnboardingViewModel.Action) -> Void) {
         self.config = config
         self.defaultBrowserConfig = defaultBrowserConfig
         self.dismissAction = dismissAction
         self.telemetry = telemetry
-    }
+     }
 
     func open(_ screen: Screen) {
         activeScreen = screen
@@ -41,20 +44,20 @@ public class OnboardingViewModel: ObservableObject {
     public func send(_ action: Action) {
         telemetry(action)
         switch action {
-            case .getStartedAppeared:
-                break
-            case .getStartedCloseTapped:
-                dismissAction()
-            case .getStartedButtonTapped:
-                break
-            case .defaultBrowserCloseTapped:
-                dismissAction()
-            case .defaultBrowserSettingsTapped:
-                UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
-            case .defaultBrowserSkip:
-                dismissAction()
-            case .defaultBrowserAppeared:
-                break
+        case .getStartedAppeared:
+            break
+        case .getStartedCloseTapped:
+            dismissAction()
+        case .getStartedButtonTapped:
+            break
+        case .defaultBrowserCloseTapped:
+            dismissAction()
+        case .defaultBrowserSettingsTapped:
+            UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
+        case .defaultBrowserSkip:
+            dismissAction()
+        case .defaultBrowserAppeared:
+            break
         }
     }
 }
