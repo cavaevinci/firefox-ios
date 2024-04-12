@@ -14,39 +14,39 @@ class SearchEngineTests: XCTestCase {
     private let engine = SearchEngineManager(prefs: UserDefaults.standard).activeEngine
     private let client = SearchSuggestClient()
 
-    private let SPECIAL_CHAR_SEARCH = "\""
-    private let NORMAL_SEARCH = "example"
-    private let BEGIN_WITH_WHITE_SPACE_SEARCH = " example"
+    private let specialCharOccurance = "\""
+    private let normalSearch = "example"
+    private let beginWithWhiteSpaceSearch = "example"
 
     func testSpecialCharacterQuery() {
-        let queryURL = engine.urlForQuery(SPECIAL_CHAR_SEARCH)
+        let queryURL = engine.urlForQuery(specialCharOccurance)
         XCTAssertNotNil(queryURL)
     }
 
     func testSpecialCharacterSearchSuggestions() {
-        let searchURL = engine.urlForSuggestions(SPECIAL_CHAR_SEARCH)
+        let searchURL = engine.urlForSuggestions(specialCharOccurance)
         XCTAssertNotNil(searchURL)
     }
 
     func testNormalQuery() {
-        let queryURL = engine.urlForQuery(NORMAL_SEARCH)
+        let queryURL = engine.urlForQuery(normalSearch)
         XCTAssertNotNil(queryURL)
     }
 
     func testNormalSearchSuggestions() {
-        let searchURL = engine.urlForSuggestions(NORMAL_SEARCH)
+        let searchURL = engine.urlForSuggestions(normalSearch)
         XCTAssertNotNil(searchURL)
     }
 
     func testBeginWithWhiteSpaceQuery() {
-        let normalQueryURL = engine.urlForQuery(NORMAL_SEARCH)
-        let testQueryURL = engine.urlForQuery(BEGIN_WITH_WHITE_SPACE_SEARCH)
+        let normalQueryURL = engine.urlForQuery(normalSearch)
+        let testQueryURL = engine.urlForQuery(beginWithWhiteSpaceSearch)
         XCTAssertEqual(normalQueryURL, testQueryURL)
     }
 
     func testBeginWithWhiteSpaceSearchSuggestions() {
-        let normalSearchURL = engine.urlForSuggestions(NORMAL_SEARCH)
-        let testSearchURL = engine.urlForSuggestions(BEGIN_WITH_WHITE_SPACE_SEARCH)
+        let normalSearchURL = engine.urlForSuggestions(normalSearch)
+        let testSearchURL = engine.urlForSuggestions(beginWithWhiteSpaceSearch)
         XCTAssertEqual(normalSearchURL, testSearchURL)
     }
 
