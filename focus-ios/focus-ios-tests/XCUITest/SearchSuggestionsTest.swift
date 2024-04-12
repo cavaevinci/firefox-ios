@@ -6,8 +6,12 @@ import XCTest
 
 class SearchSuggestionsPromptTest: BaseTestCase {
     func checkToggle(isOn: Bool) {
-        let targetValue = isOn ? "1" : "0"
-        XCTAssertEqual(app.tables.switches["BlockerToggle.enableSearchSuggestions"].value as! String, targetValue)
+      let targetValue = isOn ? "1" : "0"
+      if let switchValue = app.tables.switches["BlockerToggle.enableSearchSuggestions"].value as? String {
+        XCTAssertEqual(switchValue, targetValue)
+      } else {
+        fatalError("Unexpected value type for BlockerToggle.enableSearchSuggestions")
+      }
     }
 
     func checkSuggestions() {
