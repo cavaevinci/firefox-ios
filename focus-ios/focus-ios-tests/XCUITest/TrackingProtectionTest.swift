@@ -27,10 +27,10 @@ class TrackingProtectionTest: BaseTestCase {
         let switchSocialValue = app.switches["BlockerToggle.BlockSocial"].value!
         let switchOtherValue = app.switches["BlockerToggle.BlockOther"].value!
 
-        XCTAssertEqual(switchAdvertisingValue as! String, "1")
-        XCTAssertEqual(switchAnalyticsValue as! String, "1")
-        XCTAssertEqual(switchSocialValue as! String, "1")
-        XCTAssertEqual(switchOtherValue as! String, "0")
+        XCTAssertEqual(switchAdvertisingValue as? String, "1")
+        XCTAssertEqual(switchAnalyticsValue as? String, "1")
+        XCTAssertEqual(switchSocialValue as? String, "1")
+        XCTAssertEqual(switchOtherValue as? String, "0")
     }
 
     // Smoketest
@@ -56,8 +56,14 @@ class TrackingProtectionTest: BaseTestCase {
         }
 
         // Wait for the sidebar to open
-        let switchValue = app.switches["BlockerToggle.TrackingProtection"].value!
-        XCTAssertLessThan(switchValue as! String, "2")
+        if let switchValue = app.switches["BlockerToggle.TrackingProtection"].value as? String,
+           let numericValue = Double(switchValue) {
+          XCTAssertLessThan(numericValue, 2.0)
+        } else {
+          // Handle the case where value isn't a String or can't be converted to Double
+          fatalError("Unexpected value type or format for BlockerToggle.TrackingProtection")
+        }
+
     }
 
     // Smoke test
@@ -68,58 +74,75 @@ class TrackingProtectionTest: BaseTestCase {
         waitForWebPageLoad()
 
         // Check ad blocking is enabled
-        let TrackingProtection = app.staticTexts["Ad blocking enabled!"]
-        XCTAssertTrue(TrackingProtection.exists)
+        let trackingProtection = app.staticTexts["Ad blocking enabled!"]
+        XCTAssertTrue(trackingProtection.exists)
     }
 
     // Smoke test
     // https://testrail.stage.mozaws.net/index.php?/cases/view/1569869
     func testShieldMenuSetting() {
-        // Load URL
-        loadWebPage("https://blockads.fivefilters.org/")
-        waitForWebPageLoad()
+      // Load URL
+      loadWebPage("https://blockads.fivefilters.org/")
+      waitForWebPageLoad()
 
-        // Tap on the shield to open the tracking protection sidebar
-        app.buttons["URLBar.trackingProtectionIcon"].tap()
+      // Tap on the shield to open the tracking protection sidebar
+      app.buttons["URLBar.trackingProtectionIcon"].tap()
 
-        // Disable tracking protection
-        waitForExistence(app.switches["BlockerToggle.TrackingProtection"])
-        app.switches["BlockerToggle.TrackingProtection"].tap()
+      // Disable tracking protection
+      waitForExistence(app.switches["BlockerToggle.TrackingProtection"])
+      app.switches["BlockerToggle.TrackingProtection"].tap()
 
-        // Enhanced tracking protection is disabled
-        waitForExistence(app.switches["BlockerToggle.TrackingProtection"])
-        XCTAssertEqual(app.switches["BlockerToggle.TrackingProtection"].value! as! String, "0")
+      // Enhanced tracking protection is disabled
+      waitForExistence(app.switches["BlockerToggle.TrackingProtection"])
+      if let switchValue = app.switches["BlockerToggle.TrackingProtection"].value as? String {
+        XCTAssertEqual(switchValue, "0")
+      } else {
+        fatalError("Unexpected value type for BlockerToggle.TrackingProtection")
+      }
 
-        // Go to Settings -> Tracking Protection
-        if iPad() {
-            app.otherElements["PopoverDismissRegion"].tap()
-        } else {
-            app.buttons["closeSheetButton"].tap()
-        }
-        waitForExistence(app.buttons["HomeView.settingsButton"])
-        app.buttons["HomeView.settingsButton"].tap()
-        waitForExistence(app.collectionViews.buttons["Settings"], timeout: 5)
-        app.collectionViews.buttons["Settings"].tap()
-        waitForExistence(app.cells["settingsViewController.trackingCell"])
-        app.cells["settingsViewController.trackingCell"].tap()
+      // Go to Settings -> Tracking Protection
+      if iPad() {
+        app.otherElements["PopoverDismissRegion"].tap()
+      } else {
+        app.buttons["closeSheetButton"].tap()
+      }
+      waitForExistence(app.buttons["HomeView.settingsButton"])
+      app.buttons["HomeView.settingsButton"].tap()
+      waitForExistence(app.collectionViews.buttons["Settings"], timeout: 5)
+      app.collectionViews.buttons["Settings"].tap()
+      waitForExistence(app.cells["settingsViewController.trackingCell"])
+      app.cells["settingsViewController.trackingCell"].tap()
 
-        // The change is reflected in Tracking Protection settings.
-        waitForExistence(app.tables.staticTexts["Enhanced Tracking Protection"])
-        XCTAssertEqual(app.tables.switches["BlockerToggle.TrackingProtection"].value! as! String, "0")
+      // The change is reflected in Tracking Protection settings.
+      waitForExistence(app.tables.staticTexts["Enhanced Tracking Protection"])
+      if let switchValue = app.tables.switches["BlockerToggle.TrackingProtection"].value as? String {
+        XCTAssertEqual(app.tables.switches["BlockerToggle.TrackingProtection"].value as? String, switchValue)
+      } else {
+        fatalError("Unexpected value type for BlockerToggle.TrackingProtection")
+      }
 
-        // Tap on enhanced tracking protection to enable
-        app.tables.switches["BlockerToggle.TrackingProtection"].tap()
+      // Tap on enhanced tracking protection to enable
+      app.tables.switches["BlockerToggle.TrackingProtection"].tap()
 
-        // Enhance tracking protection is enabled
-        waitForExistence(app.tables.staticTexts["Protections are ON for this session"])
-        XCTAssertEqual(app.tables.switches["BlockerToggle.TrackingProtection"].value! as! String, "1")
-        app.navigationBars.buttons["Done"].tap()
+      // Enhance tracking protection is enabled
+      waitForExistence(app.tables.staticTexts["Protections are ON for this session"])
+      if let switchValue = app.tables.switches["BlockerToggle.TrackingProtection"].value as? String {
+        XCTAssertEqual(switchValue, "1")
+      } else {
+        fatalError("Unexpected value type for BlockerToggle.TrackingProtection")
+      }
+      app.navigationBars.buttons["Done"].tap()
 
-        // Tap on the shield icon
-        app.buttons["URLBar.trackingProtectionIcon"].tap()
+      // Tap on the shield icon
+      app.buttons["URLBar.trackingProtectionIcon"].tap()
 
-        // Enhanced tracking protection is enabled
-        waitForExistence(app.switches["BlockerToggle.TrackingProtection"])
-        XCTAssertEqual(app.switches["BlockerToggle.TrackingProtection"].value! as! String, "1")
+      // Enhanced tracking protection is enabled
+      waitForExistence(app.switches["BlockerToggle.TrackingProtection"])
+      if let switchValue = app.tables.switches["BlockerToggle.TrackingProtection"].value as? String {
+        XCTAssertEqual(switchValue, "1")
+      } else {
+        fatalError("Unexpected value type for BlockerToggle.TrackingProtection")
+      }
     }
+
 }
