@@ -12,8 +12,8 @@ import XCTest
 
 class SearchEngineManagerTests: XCTestCase {
     private var mockUserDefaults = MockUserDefaults()
-    private let CUSTOM_ENGINE_NAME = "a custom engine name"
-    private let CUSTOM_ENGINE_TEMPLATE = "http://www.example.com/%s"
+    private let customEngineName = "a custom engine name"
+    private let customEngineTemplate = "http://www.example.com/%s"
 
     override func setUp() {
         super.setUp()
@@ -23,13 +23,13 @@ class SearchEngineManagerTests: XCTestCase {
 
     func testAddEngine() {
         let manager = SearchEngineManager(prefs: mockUserDefaults)
-        let engine = manager.addEngine(name: CUSTOM_ENGINE_NAME, template: CUSTOM_ENGINE_TEMPLATE)
+        let engine = manager.addEngine(name: customEngineName, template: customEngineTemplate)
 
         // Verify that the engine is in the in-memory list
         XCTAssertTrue(manager.engines.contains(engine))
 
         // Verify that the engine is set as the active engine
-        XCTAssertEqual(manager.activeEngine.name, CUSTOM_ENGINE_NAME)
+        XCTAssertEqual(manager.activeEngine.name, customEngineName)
 
         // Verify that the engine is set to be a custom engine
         XCTAssertTrue(manager.activeEngine.isCustom)
@@ -51,7 +51,7 @@ class SearchEngineManagerTests: XCTestCase {
 
     func testRemoveCustomEngine() {
         let manager = SearchEngineManager(prefs: mockUserDefaults)
-        let engineAdded = manager.addEngine(name: CUSTOM_ENGINE_NAME, template: CUSTOM_ENGINE_TEMPLATE)
+        let engineAdded = manager.addEngine(name: customEngineName, template: customEngineTemplate)
         manager.activeEngine = manager.engines[1]
         manager.removeEngine(engine: engineAdded)
 
@@ -91,9 +91,9 @@ class SearchEngineManagerTests: XCTestCase {
     /* Disable temporary while tests run in parallel and this fails intermittently
     func testCustomEngineIsNotValidSearchEngineName() {
         let manager = SearchEngineManager(prefs: mockUserDefaults)
-        XCTAssertTrue(manager.isValidSearchEngineName(CUSTOM_ENGINE_NAME))
+        XCTAssertTrue(manager.isValidSearchEngineName(customEngineName))
         _ = manager.addEngine(name: CUSTOM_ENGINE_NAME, template: CUSTOM_ENGINE_TEMPLATE)
-        XCTAssertFalse(manager.isValidSearchEngineName(CUSTOM_ENGINE_NAME))
+        XCTAssertFalse(manager.isValidSearchEngineName(customEngineName))
     }*/
 
     func testDisabledEngineIsNotValidSearchEngineName() {
@@ -106,9 +106,14 @@ class SearchEngineManagerTests: XCTestCase {
 
     func testQueryFromSearchURLGoogle() {
         let manager = SearchEngineManager(prefs: mockUserDefaults)
-        let url = URL(string: "https://www.google.com/search?q=ps5&source=hp&ei=yDybY7_iBMSH9u8P-fWwkAs&iflsig=AJiK0e8AAAAAY5tK2K2eVYMzMJI3G8qcqgmnGdrC6UVp&ved=0ahUKEwi_5s_h9_v7AhXEg_0HHfk6DLIQ4dUDCAg&uact=5&oq=ps5&gs_lcp=Cgdnd3Mtd2l6EAMyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIICAAQgAQQyQMyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsILhCABBDHARDRAzoFCC4QgAQ6CAguEIAEENQCUIoEWOwGYKIJaAFwAHgAgAFLiAHcAZIBATOYAQCgAQGwAQA&sclient=gws-wiz")
+        let url = URL(string: "https://www.google.com/search?q=ps5&source=hp&ei=yDybY7_iBMSH9u8P-fWwkAs&iflsig",
+                      "=AJiK0e8AAAAAY5tK2K2eVYMzMJI3G8qcqgmnGdrC6UVp&ved=",
+                      "0ahUKEwi_5s_h9_v7AhXEg_0HHfk6DLIQ4dUDCAg&uact=5",
+                      "&oq=ps5&gs_lcp=Cgdnd3Mtd2l6EAMyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIICAAQgAQQyQMyBQg",
+                      "AEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsILhCABBDHARDRAzoFCC4QgAQ6CAguEIAEENQCUIoEWOwGYKIJaAFwAH",
+                      "gAgAFLiAHcAZIBATOYAQCgAQGwAQA&sclient=gws-wiz")
         guard let url = url else {
-            XCTFail()
+            XCTFail("Failed to create URL from string: \(urlString)")
             return
         }
         XCTAssertEqual(manager.queryForSearchURL(url), "ps5")
@@ -116,9 +121,10 @@ class SearchEngineManagerTests: XCTestCase {
 
     func testQueryFromSearchURLAmazon() {
         let manager = SearchEngineManager(prefs: mockUserDefaults)
-        let url = URL(string: "https://www.amazon.com/s?k=ps5&crid=PHPNYHV6UT42&sprefix=ps%2Caps%2C192&ref=nb_sb_noss_2")
+        let url = URL(string: "https://www.amazon.com/s?k=ps5&crid=PHPNYHV6UT42&sprefix=",
+                      "ps%2Caps%2C192&ref=nb_sb_noss_2")
         guard let url = url else {
-            XCTFail()
+            XCTFail("Failed to create URL from string: \(urlString)")
             return
         }
         XCTAssertEqual(manager.queryForSearchURL(url), "ps5")
@@ -128,7 +134,7 @@ class SearchEngineManagerTests: XCTestCase {
         let manager = SearchEngineManager(prefs: mockUserDefaults)
         let url = URL(string: "https://duckduckgo.com/?q=ps5&t=h_&ia=web")
         guard let url = url else {
-            XCTFail()
+            XCTFail("Failed to create URL from string: \(urlString)")
             return
         }
         XCTAssertEqual(manager.queryForSearchURL(url), "ps5")
