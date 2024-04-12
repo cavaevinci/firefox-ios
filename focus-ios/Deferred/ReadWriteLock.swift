@@ -65,10 +65,10 @@ public final class SpinLock: ReadWriteLock {
 /// Test comment 2
 public final class CASSpinLock: ReadWriteLock {
     private struct Masks {
-        static let WRITER_BIT: Int32         = 0x40000000
-        static let WRITER_WAITING_BIT: Int32 = 0x20000000
-        static let MASK_WRITER_BITS          = WRITER_BIT | WRITER_WAITING_BIT
-        static let MASK_READER_BITS          = ~MASK_WRITER_BITS
+        static let writerBit: Int32         = 0x40000000
+        static let writerWaitingBit: Int32 = 0x20000000
+        static let maskWriterBits          = writerBit | writerWaitingBit
+        static let maskReaderBits          = ~maskWriterBits
     }
 
     private var _state: UnsafeMutablePointer<Int32>
@@ -88,16 +88,16 @@ public final class CASSpinLock: ReadWriteLock {
             let state = _state.pointee
 
             // if there are no readers and no one holds the write lock, try to grab the write lock immediately
-            if (state == 0 || state == Masks.WRITER_WAITING_BIT) &&
-                OSAtomicCompareAndSwap32Barrier(state, Masks.WRITER_BIT, _state) {
+            if (state == 0 || state == Masks.writerWaitingBit) &&
+                OSAtomicCompareAndSwap32Barrier(state, Masks.writerBit, _state) {
                     break
             }
 
             // If we get here, someone is reading or writing. Set the WRITER_WAITING_BIT if
             // it isn't already to block any new readers, then wait a bit before
             // trying again. Ignore CAS failure - we'll just try again next iteration
-            if state & Masks.WRITER_WAITING_BIT == 0 {
-                OSAtomicCompareAndSwap32Barrier(state, state | Masks.WRITER_WAITING_BIT, _state)
+            if state & Masks.writerWaitingBit == 0 {
+                OSAtomicCompareAndSwap32Barrier(state, state | Masks.writerWaitingBit, _state)
             }
         } while true
 
@@ -110,7 +110,7 @@ public final class CASSpinLock: ReadWriteLock {
 
             // clear everything except (possibly) WRITER_WAITING_BIT, which will only be set
             // if another writer is already here and waiting (which will keep out readers)
-            if OSAtomicCompareAndSwap32Barrier(state, state & Masks.WRITER_WAITING_BIT, _state) {
+            if OSAtomicCompareAndSwap32Barrier(state, state & Masks.writerWaitingBit, _state) {
                 break
             }
         } while true
@@ -124,7 +124,7 @@ public final class CASSpinLock: ReadWriteLock {
             let state = _state.pointee
 
             // if there is no writer and no writer waiting, try to increment reader count
-            if (state & Masks.MASK_WRITER_BITS) == 0 &&
+            if (state & Masks.maskWriterBits) == 0 &&
                 OSAtomicCompareAndSwap32Barrier(state, state + 1, _state) {
                     break
             }
@@ -138,11 +138,11 @@ public final class CASSpinLock: ReadWriteLock {
             let state = _state.pointee
 
             // sanity check that we have a positive reader count before decrementing it
-            assert((state & Masks.MASK_READER_BITS) > 0, "unlocking read lock - invalid reader count")
+            assert((state & Masks.maskReaderBits) > 0, "unlocking read lock - invalid reader count")
 
             // desired new state: 1 fewer reader, preserving whether or not there is a writer waiting
-            let newState = ((state & Masks.MASK_READER_BITS) - 1) |
-                (state & Masks.WRITER_WAITING_BIT)
+            let newState = ((state & Masks.maskReaderBits) - 1) |
+                (state & Masks.writerWaitingBit)
 
             if OSAtomicCompareAndSwap32Barrier(state, newState, _state) {
                 break
