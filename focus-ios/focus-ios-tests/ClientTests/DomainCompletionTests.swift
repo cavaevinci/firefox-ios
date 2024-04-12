@@ -11,58 +11,58 @@ import XCTest
 #endif
 
 class DomainCompletionTests: XCTestCase {
-    private let SIMPLE_DOMAIN = "example.com"
-    private let HTTP_DOMAIN = "http://example.com"
-    private let HTTPS_DOMAIN = "https://example.com"
-    private let WWWW_DOMAIN = "https://www.example.com"
-    private let TEST_NO_PERIOD = "example"
-    private let TEST_CASE_INSENSITIVE = "https://www.EXAMPLE.com"
+    private let simpleDomain = "example.com"
+    private let httpDomain = "http://example.com"
+    private let httpsDomain = "https://example.com"
+    private let wwwDomain = "https://www.example.com"
+    private let testNoPeriod = "example"
+    private let testCaseInsensitive = "https://www.EXAMPLE.com"
 
     func testAddCustomDomain() {
-        addADomain(domain: SIMPLE_DOMAIN)
+        addADomain(domain: simpleDomain)
     }
 
     func testAddCustomDomainWithHttp() {
-        addADomain(domain: HTTP_DOMAIN)
+        addADomain(domain: httpDomain)
     }
 
     func testAddCustomDomainWithHttps() {
-        addADomain(domain: HTTPS_DOMAIN)
+        addADomain(domain: httpsDomain)
     }
 
     func testAddCustomDomainWithWWW() {
-        addADomain(domain: WWWW_DOMAIN)
+        addADomain(domain: wwwDomain)
     }
 
     func testAddCustomDomainDuplicate() {
-        Settings.setCustomDomainSetting(domains: [SIMPLE_DOMAIN])
-        [WWWW_DOMAIN, TEST_CASE_INSENSITIVE].forEach {
+        Settings.setCustomDomainSetting(domains: [simpleDomain])
+        [wwwDomain, testCaseInsensitive].forEach {
             let sut = CustomCompletionSource(
                 enableCustomDomainAutocomplete: { Settings.getToggle(.enableCustomDomainAutocomplete) },
                 getCustomDomainSetting: { Settings.getCustomDomainSetting() },
                 setCustomDomainSetting: { Settings.setCustomDomainSetting(domains: $0) }
             )
             switch sut.add(suggestion: $0) {
-                case .failure(let error):
-                    XCTAssertEqual(error, .duplicateDomain)
-                case .success:
-                    XCTFail()
+            case .failure(let error):
+                XCTAssertEqual(error, .duplicateDomain)
+            case .success:
+                XCTFail("Failed to add custom domain duplicate")
             }
         }
     }
 
     func testRemoveCustomDomain() {
-        Settings.setCustomDomainSetting(domains: [SIMPLE_DOMAIN])
+        Settings.setCustomDomainSetting(domains: [simpleDomain])
         let sut = CustomCompletionSource(
             enableCustomDomainAutocomplete: { Settings.getToggle(.enableCustomDomainAutocomplete) },
             getCustomDomainSetting: { Settings.getCustomDomainSetting() },
             setCustomDomainSetting: { Settings.setCustomDomainSetting(domains: $0) }
         )
         switch sut.remove(at: 0) {
-            case .failure:
-                XCTFail()
-            case .success:
-                XCTAssertEqual(0, Settings.getCustomDomainSetting().count)
+        case .failure:
+            XCTFail("Failed to remove custom domain")
+        case .success:
+            XCTAssertEqual(0, Settings.getCustomDomainSetting().count)
         }
     }
 
@@ -73,11 +73,11 @@ class DomainCompletionTests: XCTestCase {
             getCustomDomainSetting: { Settings.getCustomDomainSetting() },
             setCustomDomainSetting: { Settings.setCustomDomainSetting(domains: $0) }
         )
-        switch sut.add(suggestion: TEST_NO_PERIOD) {
-            case .failure(let error):
-                XCTAssertEqual(error, .invalidUrl)
-            case .success:
-                XCTFail()
+        switch sut.add(suggestion: testNoPeriod) {
+        case .failure(let error):
+            XCTAssertEqual(error, .invalidUrl)
+        case .success:
+            XCTFail("Failed to add custom domain without period")
         }
     }
 
@@ -89,11 +89,11 @@ class DomainCompletionTests: XCTestCase {
             setCustomDomainSetting: { Settings.setCustomDomainSetting(domains: $0) }
         )
         switch sut.add(suggestion: domain) {
-            case .failure:
-                XCTFail()
-            case .success:
-                let domains = Settings.getCustomDomainSetting()
-                XCTAssertEqual(domains.count, 1)
+        case .failure:
+            XCTFail("Failed to add a domain")
+        case .success:
+            let domains = Settings.getCustomDomainSetting()
+            XCTAssertEqual(domains.count, 1)
         }
     }
 }
