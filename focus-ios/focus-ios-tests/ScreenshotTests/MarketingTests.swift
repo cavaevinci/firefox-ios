@@ -5,7 +5,7 @@
 import XCTest
 
 class MarketingTests: BaseTestCaseL10n {
-    func testSettingsView() {
+    @MainActor func testSettingsView() {
         if iPad() {
             app.windows.element(boundBy: 0).tap()
         } else {
@@ -34,7 +34,7 @@ class MarketingTests: BaseTestCaseL10n {
         waitForExistence(app.cells["DuckDuckGo"])
     }
 
-    func testVisitSite() {
+    @MainActor func testVisitSite() {
         if iPad() {
             app.windows.element(boundBy: 0).tap()
         } else {
@@ -47,16 +47,16 @@ class MarketingTests: BaseTestCaseL10n {
         snapshot("Website-Focus")
     }
 
-    func testPinTopSites() {
+    @MainActor func testPinTopSites() {
         if iPad() {
             app.windows.element(boundBy: 0).tap()
         } else {
             waitForExistence(app.buttons["URLBar.cancelButton"], timeout: 15)
         }
-        saveTopSite(TopSite: "mozilla.org")
-        saveTopSite(TopSite: "pocket.com")
-        saveTopSite(TopSite: "relay.com")
-        saveTopSite(TopSite: "monitor.com")
+        saveTopSite(topSite: "mozilla.org")
+        saveTopSite(topSite: "pocket.com")
+        saveTopSite(topSite: "relay.com")
+        saveTopSite(topSite: "monitor.com")
 
         app.buttons["URLBar.deleteButton"].tap()
         waitForExistence(app.buttons["URLBar.cancelButton"], timeout: 15)
@@ -64,9 +64,9 @@ class MarketingTests: BaseTestCaseL10n {
         snapshot("PinnedSites")
     }
 
-    private func saveTopSite(TopSite: String) {
+    private func saveTopSite(topSite: String) {
         app.textFields.firstMatch.tap()
-        app.textFields.firstMatch.typeText(TopSite)
+        app.textFields.firstMatch.typeText(topSite)
         app.textFields.firstMatch.typeText("\n")
         waitForExistence(app.buttons["HomeView.settingsButton"])
         app.buttons["HomeView.settingsButton"].tap()
