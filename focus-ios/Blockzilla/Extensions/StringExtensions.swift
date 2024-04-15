@@ -23,12 +23,15 @@ fileprivate extension String {
 
 extension String {
     var isUrl: Bool {
-        let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+      do {
+        let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
         guard let match = detector.firstMatch(in: self, range: NSRange(location: 0, length: self.count)), match.range.length == self.count else {
-            return false
+          return false
         }
-
         return true
+      } catch {
+        return false
+      }
     }
 
     fileprivate func toValue(_ index: Int) -> Character {
