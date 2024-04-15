@@ -12,11 +12,18 @@ class ErrorPage {
     }
 
     var data: Data {
-        let file = Bundle.main.path(forResource: "errorPage", ofType: "html")!
-
-        let page = try! String(contentsOfFile: file)
-            .replacingOccurrences(of: "%messageLong%", with: error.localizedDescription)
-            .replacingOccurrences(of: "%button%", with: UIConstants.strings.errorTryAgain)
+      guard let file = Bundle.main.path(forResource: "errorPage", ofType: "html") else {
+        // Handle the case where the file is missing
+        return Data()
+      }
+      do {
+        let page = try String(contentsOfFile: file)
+          .replacingOccurrences(of: "%messageLong%", with: error.localizedDescription)
+          .replacingOccurrences(of: "%button%", with: UIConstants.strings.errorTryAgain)
         return page.data(using: .utf8)!
+      } catch {
+        print("Error loading error page: \(error.localizedDescription)")
+        return Data()
+      }
     }
 }
