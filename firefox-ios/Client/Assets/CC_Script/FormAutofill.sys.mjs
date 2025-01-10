@@ -83,10 +83,22 @@ export const FormAutofill = {
     }
     return false;
   },
+
+  /**
+   * Return true if address autofill is available for a specific country.
+   */
   isAutofillAddressesAvailableInCountry(country) {
-    return FormAutofill._addressAutofillSupportedCountries.includes(
-      country.toUpperCase()
-    );
+    if (FormAutofill._isAutofillAddressesAvailableInExperiment) {
+      return true;
+    }
+
+    let available = FormAutofill._isAutofillAddressesAvailable;
+    if (country && available == "detect") {
+      return FormAutofill._addressAutofillSupportedCountries.includes(
+        country.toUpperCase()
+      );
+    }
+    return available == "on";
   },
   get isAutofillEnabled() {
     return this.isAutofillAddressesEnabled || this.isAutofillCreditCardsEnabled;
@@ -190,6 +202,10 @@ export const FormAutofill = {
       maxLogLevelPref: "extensions.formautofill.loglevel",
       prefix: logPrefix,
     });
+  },
+
+  get isMLExperimentEnabled() {
+    return FormAutofill._isMLEnabled && FormAutofill._isMLExperimentEnabled;
   },
 };
 
@@ -297,6 +313,27 @@ XPCOMUtils.defineLazyPreferenceGetter(
   FormAutofill,
   "_isAutofillAddressesAvailableInExperiment",
   "extensions.formautofill.addresses.experiments.enabled"
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  FormAutofill,
+  "_isMLEnabled",
+  "browser.ml.enable",
+  false
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  FormAutofill,
+  "_isMLExperimentEnabled",
+  "extensions.formautofill.ml.experiment.enabled",
+  false
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  FormAutofill,
+  "MLModelRevision",
+  "extensions.formautofill.ml.experiment.modelRevision",
+  null
 );
 
 ChromeUtils.defineLazyGetter(FormAutofill, "countries", () =>

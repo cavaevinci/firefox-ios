@@ -13,6 +13,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   FieldScanner: "resource://gre/modules/shared/FieldScanner.sys.mjs",
   FormAutofillUtils: "resource://gre/modules/shared/FormAutofillUtils.sys.mjs",
   LabelUtils: "resource://gre/modules/shared/LabelUtils.sys.mjs",
+  MLAutofill: "resource://autofill/MLAutofill.sys.mjs",
 });
 
 /**
@@ -119,6 +120,53 @@ export const FormAutofillHeuristics = {
         desiredValues
       )
     );
+  },
+
+  /**
+   * This function handles the case when two adjacent fields are incorrectly
+   * identified with the same field name. Currently, only given-name and
+   * family-name are handled as possible errors.
+   *
+   * @param {FieldScanner} scanner
+   *        The current parsing status for all elements
+   * @returns {boolean}
+   *        Return true if any field is recognized and updated, otherwise false.
+   */
+  _parseNameFieldsContent(scanner, fieldDetail) {
+    const TARGET_FIELDS = ["given-name", "family-name"];
+    if (!TARGET_FIELDS.includes(fieldDetail.fieldName)) {
+      return false;
+    }
+
+    let idx = scanner.parsingIndex;
+    const detailBefore = scanner.getFieldDetailByIndex(idx - 1);
+    if (fieldDetail.fieldName == detailBefore?.fieldName) {
+      let otherFieldName =
+        fieldDetail.fieldName == TARGET_FIELDS[0]
+          ? TARGET_FIELDS[1]
+          : TARGET_FIELDS[0];
+
+      // If the second field matches both field names, or both fields match
+      // both field names, then we change the second field, since the author
+      // was more likely to miscopy the second field from the first. However,
+      // if the earlier field only matches, then we change the first field.
+      if (
+        this._findMatchedFieldNames(fieldDetail.element, [otherFieldName])
+          .length
+      ) {
+        scanner.updateFieldName(idx, otherFieldName);
+      } else if (
+        this._findMatchedFieldNames(detailBefore.element, [otherFieldName])
+          .length
+      ) {
+        scanner.updateFieldName(idx - 1, otherFieldName);
+      }
+
+      scanner.parsingIndex++;
+      return true;
+    }
+
+    return false;
   },
 
   /**
@@ -330,7 +378,38 @@ export const FormAutofillHeuristics = {
           fields[0].reason != "autocomplete" &&
           ["address-line2", "address-line3"].includes(fields[0].fieldName)
         ) {
-          scanner.updateFieldName(fieldIndicies[0], "address-line1");
+          // If an earlier address field was already found, ignore any
+          // address-related fields from the OTHER_ADDRESS_FIELDS
+          // list since those can appear in-between the address-level1
+          // and additional address info fields. If no address field
+          // exists, update the field to be address-line1.
+          const OTHER_ADDRESS_FIELDS = [
+            "address-level1",
+            "address-level2",
+            "postal-code",
+            "organization",
+          ];
+          let canUpdate = true;
+
+          for (let idx = scanner.parsingIndex - 1; idx >= 0; idx--) {
+            const detail = scanner.getFieldDetailByIndex(idx);
+            if (
+              detail?.fieldName == "street-address" ||
+              detail?.fieldName == "address-line1" ||
+              detail?.fieldName == "address-housenumber"
+            ) {
+              canUpdate = false;
+              break;
+            }
+
+            if (!OTHER_ADDRESS_FIELDS.includes(detail?.fieldName)) {
+              break;
+            }
+          }
+
+          if (canUpdate) {
+            scanner.updateFieldName(fieldIndicies[0], "address-line1");
+          }
         }
         break;
       case 2:
@@ -555,17 +634,24 @@ export const FormAutofillHeuristics = {
       prevCCFields.add(detail.fieldName);
     }
 
+    const isLastField =
+      scanner.getFieldDetailByIndex(scanner.parsingIndex + 1) === null;
+
     // We update the "name" fields to "cc-name" fields when the following
     // conditions are met:
     // 1. The preceding fields are identified as credit card fields and
     //    contain the "cc-number" field.
     // 2. No "cc-name-*" field is found among the preceding credit card fields.
-    // 3. The "cc-csc" field is not present among the preceding credit card fields.
+    // 3. The "cc-csc" field is either not present among the preceding credit card fields,
+    //    or the current field is the last field in the form. This condition is in place
+    //    because "cc-csc" is often the last field in a credit card form, and we want to
+    //    avoid mistakenly updating fields in subsequent address forms.
     if (
       ["cc-number"].some(f => prevCCFields.has(f)) &&
-      !["cc-name", "cc-given-name", "cc-family-name", "cc-csc"].some(f =>
+      !["cc-name", "cc-given-name", "cc-family-name"].some(f =>
         prevCCFields.has(f)
-      )
+      ) &&
+      (isLastField || !prevCCFields.has("cc-csc"))
     ) {
       // If there is only one field, assume the name field a `cc-name` field
       if (fields.length == 1) {
@@ -619,35 +705,65 @@ export const FormAutofillHeuristics = {
    * in the belonging section. The details contain the autocomplete info
    * (e.g. fieldName, section, etc).
    *
-   * @param {HTMLFormElement} form
+   * @param {formLike} formLike
    *        the elements in this form to be predicted the field info.
+   * @param {boolean} ignoreInvisibleInput
+   *        True to NOT run heuristics on invisible <input> fields.
    * @returns {Array<FormSection>}
    *        all sections within its field details in the form.
    */
-  getFormInfo(form) {
-    const elements = Array.from(form.elements).filter(element =>
+  getFormInfo(formLike, ignoreInvisibleInput) {
+    const elements = Array.from(formLike.elements).filter(element =>
       lazy.FormAutofillUtils.isCreditCardOrAddressFieldType(element)
     );
 
+    let closestHeaders;
+    let closestButtons;
+    if (FormAutofill.isMLExperimentEnabled && elements.length) {
+      closestHeaders = lazy.MLAutofill.closestHeaderAbove(elements);
+      closestButtons = lazy.MLAutofill.closestButtonBelow(elements);
+    }
+
     const fieldDetails = [];
-    for (const element of elements) {
+    for (let idx = 0; idx < elements.length; idx++) {
+      const element = elements[idx];
       // Ignore invisible <input>, we still keep invisible <select> since
       // some websites implements their custom dropdown and use invisible <select>
       // to store the value.
       const isVisible = lazy.FormAutofillUtils.isFieldVisible(element);
-      if (!HTMLSelectElement.isInstance(element) && !isVisible) {
+      if (
+        !HTMLSelectElement.isInstance(element) &&
+        !isVisible &&
+        ignoreInvisibleInput
+      ) {
         continue;
       }
 
-      const [fieldName, autocompleteInfo, confidence] = this.inferFieldInfo(
-        element,
-        elements
-      );
+      const [fieldName, inferInfo] = this.inferFieldInfo(element, elements);
+
+      // For cases where the heuristic has determined the field name without
+      // running Fathom, still run Fathom so we can compare the results between
+      // Fathom and the ML model. Note that this is only enabled when the ML experiment
+      // is enabled.
+      if (
+        FormAutofill.isMLExperimentEnabled &&
+        inferInfo.fathomConfidence == undefined
+      ) {
+        let fields = this._getPossibleFieldNames(element);
+        fields = fields.filter(r => lazy.CreditCardRulesets.types.includes(r));
+        const [label, score] = this.getFathomField(element, fields, elements);
+        inferInfo.fathomLabel = label;
+        inferInfo.fathomConfidence = score;
+      }
+
       fieldDetails.push(
-        lazy.FieldDetail.create(element, form, fieldName, {
-          autocompleteInfo,
-          confidence,
+        lazy.FieldDetail.create(element, formLike, fieldName, {
+          autocompleteInfo: inferInfo.autocompleteInfo,
+          fathomLabel: inferInfo.fathomLabel,
+          fathomConfidence: inferInfo.fathomConfidence,
           isVisible,
+          mlHeaderInput: closestHeaders?.[idx] ?? null,
+          mlButtonInput: closestButtons?.[idx] ?? null,
         })
       );
     }
@@ -680,7 +796,10 @@ export const FormAutofillHeuristics = {
       // First, we get the inferred field info
       const fieldDetail = scanner.getFieldDetailByIndex(scanner.parsingIndex);
 
-      if (this._parsePhoneFields(scanner, fieldDetail)) {
+      if (
+        this._parseNameFieldsContent(scanner, fieldDetail) ||
+        this._parsePhoneFields(scanner, fieldDetail)
+      ) {
         continue;
       }
 
@@ -762,10 +881,11 @@ export const FormAutofillHeuristics = {
    * @param {Array<HTMLElement>} elements - See `getFathomField` for details
    * @returns {Array} - An array containing:
    *                    [0]the inferred field name
-   *                    [1]autocomplete information if the element has autocomplete attribute, null otherwise.
-   *                    [2]fathom confidence if fathom considers it a cc field, null otherwise.
+   *                    [1]information collected during the inference process. The possible values includes:
+   *                       'autocompleteInfo', 'fathomLabel', and 'fathomConfidence'.
    */
   inferFieldInfo(element, elements = []) {
+    const inferredInfo = {};
     const autocompleteInfo = element.getAutocompleteInfo();
 
     // An input[autocomplete="on"] will not be early return here since it stll
@@ -774,7 +894,8 @@ export const FormAutofillHeuristics = {
       autocompleteInfo?.fieldName &&
       !["on", "off"].includes(autocompleteInfo.fieldName)
     ) {
-      return [autocompleteInfo.fieldName, autocompleteInfo, null];
+      inferredInfo.autocompleteInfo = autocompleteInfo;
+      return [autocompleteInfo.fieldName, inferredInfo];
     }
 
     const fields = this._getPossibleFieldNames(element);
@@ -784,7 +905,7 @@ export const FormAutofillHeuristics = {
     // (e.g. HomeDepot, BestBuy), so "tel" type should be not used for "tel"
     // prediction.
     if (element.type == "email" && fields.includes("email")) {
-      return ["email", null, null];
+      return ["email", inferredInfo];
     }
 
     if (lazy.FormAutofillUtils.isFathomCreditCardsEnabled()) {
@@ -797,9 +918,13 @@ export const FormAutofillHeuristics = {
         fathomFields,
         elements
       );
+      if (confidence != null) {
+        inferredInfo.fathomLabel = matchedFieldName;
+        inferredInfo.fathomConfidence = confidence;
+      }
       // At this point, use fathom's recommendation if it has one
       if (matchedFieldName) {
-        return [matchedFieldName, null, confidence];
+        return [matchedFieldName, inferredInfo];
       }
 
       // Continue to run regex-based heuristics even when fathom doesn't recognize
@@ -815,9 +940,9 @@ export const FormAutofillHeuristics = {
     // match credit card network names in value or label.
     if (HTMLSelectElement.isInstance(element)) {
       if (this._isExpirationMonthLikely(element)) {
-        return ["cc-exp-month", null, null];
+        return ["cc-exp-month", inferredInfo];
       } else if (this._isExpirationYearLikely(element)) {
-        return ["cc-exp-year", null, null];
+        return ["cc-exp-year", inferredInfo];
       }
 
       const options = Array.from(element.querySelectorAll("option"));
@@ -828,7 +953,7 @@ export const FormAutofillHeuristics = {
             lazy.CreditCard.getNetworkFromName(option.text)
         )
       ) {
-        return ["cc-type", null, null];
+        return ["cc-type", inferredInfo];
       }
 
       // At least two options match the country name, otherwise some state name might
@@ -845,13 +970,13 @@ export const FormAutofillHeuristics = {
               countryDisplayNames.includes(option.text)
           )
       ) {
-        return ["country", null, null];
+        return ["country", inferredInfo];
       }
     }
 
     // Find a matched field name using regexp-based heuristics
     const matchedFieldNames = this._findMatchedFieldNames(element, fields);
-    return [matchedFieldNames, null, null];
+    return [matchedFieldNames, inferredInfo];
   },
 
   /**
